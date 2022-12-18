@@ -1,11 +1,23 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <sstream>
 #include <vector>
 #include <algorithm>
+#include <sysexits.h>
+#include <filesystem>
 
-std::string getHeaderName(std::string &filePath)
+enum class language
+{C, Cpp};
+
+//convert String to lowercase
+std::string strToLower(std::string in)
+{
+    std::transform(in.begin(), in.end(), in.begin(),
+                   [](unsigned char c){ return std::tolower(c); });
+    return in;
+}
+
+std::string getHeaderName(const std::string &filePath)
 {
     //separate filename
     auto begin {filePath.find_last_of("/\\") + 1};
@@ -28,7 +40,7 @@ std::string getHeaderName(std::string &filePath)
 }
 
 //removes directory and type from name and converts it to a valid c name
-std::string getFileNameWithoutType(std::string &filePath)
+std::string getCFileName(const std::string &filePath)
 {
     //separate filename
     auto begin {filePath.find_last_of("/\\") + 1};
@@ -49,20 +61,63 @@ std::string getFileNameWithoutType(std::string &filePath)
     return name;
 }
 
-std::string getPrefix(std::string &filePath)
+//get filename with extension
+std::string getFilename(const std::string &filePath)
 {
-    return "//\n"
-           "// Created by fileString: https://github.com/TjarkG/fileString\n"
-           "//\n"
-           "\n#ifndef " + getHeaderName(filePath) +
-           "\n#define " + getHeaderName(filePath) +
-           "\n\n"
-           "char " + getFileNameWithoutType(filePath) + "[] = \"";
+    //separate filename
+    auto begin {filePath.find_last_of("/\\") + 1};
+    return filePath.substr(begin);
 }
 
-std::string getSuffix(std::string &filePath)
+std::string getPrefix(const std::string &filePath, enum language &lang)
 {
-    return "\";\n\n#endif //" + getHeaderName(filePath) + "\n";
+    switch (lang)
+    {
+        case language::C:
+            return "//\n"
+                   "// Created by fileString: https://github.com/TjarkG/fileString\n"
+                   "//\n"
+                   "\n#ifndef " + getHeaderName(filePath) +
+                   "\n#define " + getHeaderName(filePath) +
+                   "\n\n"
+                   "const char " + getCFileName(filePath) + "[] = \"";
+        case language::Cpp:
+            return "//\n"
+                   "// Created by fileString: https://github.com/TjarkG/fileString\n"
+                   "//\n"
+                   "\n#ifndef " + getHeaderName(filePath) +
+                   "\n#define " + getHeaderName(filePath) +
+                   "\n\n#include <string>\n\n"
+                   "const std::string " + getCFileName(filePath) + " {\"";
+        default:
+            return "\"";
+    }
+}
+
+std::string getSuffix(const std::string &filePath, enum language &lang)
+{
+    switch (lang)
+    {
+        case language::C:
+            return "\";\n\n#endif //" + getHeaderName(filePath) + "\n";
+        case language::Cpp:
+            return "\"};\n\n#endif //" + getHeaderName(filePath) + "\n";
+        default:
+            return "\"";
+    }
+}
+
+std::string getFileEnding(enum language &lang)
+{
+    switch (lang)
+    {
+        case language::C:
+            return ".h";
+        case language::Cpp:
+            return ".hpp";
+        default:
+            return "";
+    }
 }
 
 std::string transformCharC(char in)
@@ -128,43 +183,123 @@ int main(int argc, char **argv)
 {
     bool verbose {false};
     bool help {argc == 1};  //show help if no arguments are supplied
+    enum language lang {language::C};
+    std::string outDir {};
 
     std::vector<std::string> const argList(argv + 1, argv + argc); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    for(auto i: argList)
+    std::vector<std::string> files {};
+
+    for(int i = 0; i < argList.size(); ++i)
     {
         //make argument lowercase
-        std::transform(i.begin(), i.end(), i.begin(),
-                       [](unsigned char c){ return std::tolower(c); });
+        const auto argument {strToLower(argList[i])};
 
-        if(i == "-h")
+        if(argument == "-h")
             help = true;
-        else if(i == "-v")
+        else if(argument == "-v")
             verbose = true;
+        else if(argument == "-l")
+        {
+            ++i;
+            if (i == (argc - 1))
+            {
+                std::cerr << "Error: -l argument without language specifier\n";
+                exit(EX_USAGE);
+            }
+
+            const auto next {strToLower(argList[i])};
+            if(next == "cpp" || next == "c++")
+                lang = language::Cpp;
+            else if (next == "c")
+                lang = language::C;
+            else
+            {
+                std::cerr << "Error: " << argList[i] << " is not a valid language specifier\n";
+                exit(EX_USAGE);
+            }
+        }
+        else if(argument == "-o")
+        {
+            ++i;
+            if (i == (argc - 1))
+            {
+                std::cerr << "Error: -o argument without Output Path\n";
+                exit(EX_USAGE);
+            }
+
+            std::filesystem::file_status const s {std::filesystem::status (argList[i])};
+            if(std::filesystem::is_directory(s))
+                outDir = argList[i];
+            else
+            {
+                std::cerr << "Error: " << argList[i] << " is not a directory\n";
+                exit(EX_IOERR);
+            }
+        }
+        else
+            files.push_back(argList[i]);
     }
 
     if(help)
         printHelp();
-
-    std::string filePath {"tests/test.txt"};
-    std::ifstream inFile {filePath};
-    if (inFile.is_open())
-    {
-        std::cout << getPrefix(filePath);
-
-        char c {};
-        while (!(inFile.get(c), inFile.eof()))
-        {
-            std::cout << transformCharC(c);
-        }
-        inFile.close();
-
-        std::cout << getSuffix(filePath);
-    }
-    else
-        std::cout << "Unable to open file";
-
     if (verbose)
-        std::cout << "Output Path: " << filePath << "\n";   //TODO: Output Path
+    {
+        std::cout << "Language Mode: ";
+
+        switch (lang)
+        {
+            case language::C:
+                std::cout << "C";
+                break;
+            case language::Cpp:
+                std::cout << "C++";
+                break;
+        }
+
+        std::cout << "\n";
+    }
+
+    for (const auto& inPath: files)
+    {
+        std::string outPath {};
+        if (outDir.empty())
+            outPath = inPath + getFileEnding(lang);
+        else
+            outPath = outDir + "/" + getFilename(inPath) + getFileEnding(lang);
+
+        std::ifstream inFile {inPath};
+        std::ofstream outFile {outPath};
+
+        if (inFile.is_open())
+        {
+            if (outFile.is_open())
+            {
+                outFile << getPrefix(inPath, lang);
+
+                char c{};
+                while (!(inFile.get(c), inFile.eof()))
+                {
+                    outFile << transformCharC(c);
+                }
+                inFile.close();
+
+                outFile << getSuffix(inPath, lang);
+
+                if (verbose)
+                    std::cout << "Output Path: " << outPath << "\n";
+            }
+            else
+            {
+                std::cerr << "Error: Unable to open file " << outPath << "\n";
+                exit(EX_IOERR);
+            }
+        }
+        else
+        {
+            std::cerr << "Error: Unable to open file " << inPath << "\n";
+            exit(EX_IOERR);
+        }
+    }
 
     return 0;
 }
