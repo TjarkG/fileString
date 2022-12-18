@@ -1,6 +1,9 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <sstream>
+#include <vector>
+#include <algorithm>
 
 std::string getHeaderName(std::string &filePath)
 {
@@ -49,7 +52,7 @@ std::string getFileNameWithoutType(std::string &filePath)
 std::string getPrefix(std::string &filePath)
 {
     return "//\n"
-           "// Created by fileString\n"
+           "// Created by fileString: https://github.com/TjarkG/fileString\n"
            "//\n"
            "\n#ifndef " + getHeaderName(filePath) +
            "\n#define " + getHeaderName(filePath) +
@@ -59,7 +62,7 @@ std::string getPrefix(std::string &filePath)
 
 std::string getSuffix(std::string &filePath)
 {
-    return "\";\n\n#endif //" + getHeaderName(filePath);
+    return "\";\n\n#endif //" + getHeaderName(filePath) + "\n";
 }
 
 std::string transformCharC(char in)
@@ -105,9 +108,9 @@ std::string transformCharC(char in)
                 out.push_back(in);
             else
             {
-                char tmp[32];
-                sprintf(tmp, "\\x%2X", in & 0xFF);
-                out.append(tmp);
+                std::stringstream tmp;
+                tmp << "\\x" << std::hex << (int) ((uint8_t) in);
+                out.append(tmp.str());
             }
             break;
     }
@@ -115,15 +118,40 @@ std::string transformCharC(char in)
     return out;
 }
 
-int main()
+void printHelp()
 {
+    //TODO
+    std::cout << "help\n";
+}
+
+int main(int argc, char **argv)
+{
+    bool verbose {false};
+    bool help {argc == 1};  //show help if no arguments are supplied
+
+    std::vector<std::string> const argList(argv + 1, argv + argc); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    for(auto i: argList)
+    {
+        //make argument lowercase
+        std::transform(i.begin(), i.end(), i.begin(),
+                       [](unsigned char c){ return std::tolower(c); });
+
+        if(i == "-h")
+            help = true;
+        else if(i == "-v")
+            verbose = true;
+    }
+
+    if(help)
+        printHelp();
+
     std::string filePath {"tests/test.txt"};
     std::ifstream inFile {filePath};
     if (inFile.is_open())
     {
         std::cout << getPrefix(filePath);
 
-        char c;
+        char c {};
         while (!(inFile.get(c), inFile.eof()))
         {
             std::cout << transformCharC(c);
@@ -132,7 +160,11 @@ int main()
 
         std::cout << getSuffix(filePath);
     }
+    else
+        std::cout << "Unable to open file";
 
-    else std::cout << "Unable to open file";
+    if (verbose)
+        std::cout << "Output Path: " << filePath << "\n";   //TODO: Output Path
+
     return 0;
 }
