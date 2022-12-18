@@ -30,12 +30,20 @@ You probably already have them if you need this
 ### 3. Start Converting / usage with CMake and make
 
 To see if the installation was successful, 
-go to the `tests` directory, delete test.txt.hpp and regenerate it with
+go to the `tests` directory and generate `test.txt.h` with
 
     fileString test.txt -l C++
 
 CMake:
 
+    add_custom_target(C_Test
+        COMMAND fileString tests/test.txt
+        COMMAND gcc tests/test.c -o ${PROJECT_BINARY_DIR}/C_Test
+    
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+    
+        DEPENDS tests/test.txt tests/test.c tests/test.txt.h
+    )
 
 make:
 

@@ -3,3 +3,7 @@ cmake-build-debug
 
 #Clion
 .idea
+
+#Project Testfiles
+tests/test.txt.h
+tests/test.txt.hpp

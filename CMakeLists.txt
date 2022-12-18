@@ -7,6 +7,23 @@ add_executable(fileString main.cpp)
 
 install(TARGETS fileString DESTINATION bin)
 
-add_executable(C_Test tests/test.c tests/test.txt.h)
+add_custom_target(C_Test
+        COMMAND fileString tests/test.txt
+        COMMAND gcc tests/test.c -o ${PROJECT_BINARY_DIR}/C_Test
 
-add_executable(C++_Test tests/test.cpp tests/test.txt.hpp)
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+
+        DEPENDS tests/test.txt tests/test.c
+        )
+
+add_custom_target(C++_Test
+        COMMAND fileString tests/test.txt -l C++
+        COMMAND g++ tests/test.cpp -o ${PROJECT_BINARY_DIR}/C++_Test
+
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+
+        DEPENDS tests/test.txt tests/test.cpp
+        )
+
+#without this, CLion thinks these files dont have a target
+add_executable(void tests/test.c tests/test.txt.h tests/test.cpp tests/test.txt.hpp)
