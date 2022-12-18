@@ -175,8 +175,13 @@ std::string transformCharC(char in)
 
 void printHelp()
 {
-    //TODO
-    std::cout << "help\n";
+    //yes, this would be the exact use case of this program... chickens and eggs
+    std::cout << "How to use: filestring [Options] [Input Files]\n\n"
+                 "Options:\n"
+                 "-h Show this help message\n"
+                 "-v Verbose output, prints output paths\n"
+                 "-l Language, followed by language specifier (C, C++ or cpp), default is C\n"
+                 "-o Output directory (default: equal to Input Directory)\n";
 }
 
 int main(int argc, char **argv)
