@@ -1,5 +1,4 @@
-# FileString
-## Commandline Text to Header file converter
+## FileString - Commandline Text to Header file converter
 
 You want to include your help page in your binary? 
 Or any text in a Microcontroller Program? 
