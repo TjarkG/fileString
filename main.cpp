@@ -164,7 +164,7 @@ std::string transformCharC(char in)
             else
             {
                 std::stringstream tmp;
-                tmp << "\\x" << std::hex << (int) ((uint8_t) in);
+                tmp << "\\x" << std::hex << (int) ((uint8_t) in) << "\"\"";
                 out.append(tmp.str());
             }
             break;
