@@ -29,7 +29,7 @@ You probably already have them if you need this
 ### 3. Start Converting / usage with CMake and make
 
 To see if the installation was successful, 
-go to the `tests` directory and generate `test.txt.h` with
+go to the `tests` directory and generate `test.txt.hpp` with
 
     fileString test.txt -l C++
 
