@@ -26,4 +26,5 @@ add_custom_target(C++_Test
         )
 
 #without this, CLion thinks these files dont have a target
-add_executable(void tests/test.c tests/test.txt.h tests/test.cpp tests/test.txt.hpp)
+add_executable(void1 tests/test.c tests/test.txt.h)
+add_executable(void2 tests/test.cpp tests/test.txt.hpp)

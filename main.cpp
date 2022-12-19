@@ -191,13 +191,12 @@ int main(int argc, char **argv)
     enum language lang {language::C};
     std::string outDir {};
 
-    std::vector<std::string> const argList(argv + 1, argv + argc); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    std::vector<std::string> files {};
+    std::vector<std::string> inFiles {};
 
-    for(int i = 0; i < argList.size(); ++i)
+    for(int i = 1; i < argc; ++i)
     {
         //make argument lowercase
-        const auto argument {strToLower(argList[i])};
+        const auto argument {strToLower(argv[i])};
 
         if(argument == "-h")
             help = true;
@@ -206,77 +205,75 @@ int main(int argc, char **argv)
         else if(argument == "-l")
         {
             ++i;
-            if (i == (argc - 1))
+            if (i == argc)
             {
                 std::cerr << "Error: -l argument without language specifier\n";
                 exit(EX_USAGE);
             }
 
-            const auto next {strToLower(argList[i])};
+            const auto next {strToLower(argv[i])};
             if(next == "cpp" || next == "c++")
                 lang = language::Cpp;
             else if (next == "c")
                 lang = language::C;
             else
             {
-                std::cerr << "Error: " << argList[i] << " is not a valid language specifier\n";
+                std::cerr << "Error: " << argv[i] << " is not a valid language specifier\n";
                 exit(EX_USAGE);
             }
         }
         else if(argument == "-o")
         {
             ++i;
-            if (i == (argc - 1))
+            if (i == argc)
             {
                 std::cerr << "Error: -o argument without Output Path\n";
                 exit(EX_USAGE);
             }
 
-            std::filesystem::file_status const s {std::filesystem::status (argList[i])};
+            std::filesystem::file_status const s {std::filesystem::status (argv[i])};
             if(std::filesystem::is_directory(s))
-                outDir = argList[i];
+                outDir = argv[i];
             else
             {
-                std::cerr << "Error: " << argList[i] << " is not a directory\n";
+                std::cerr << "Error: " << argv[i] << " is not a directory\n";
                 exit(EX_IOERR);
             }
         }
         else
-            files.push_back(argList[i]);
+            inFiles.emplace_back(argv[i]);
     }
 
     if(help)
         printHelp();
+
     if (verbose)
     {
-        std::cout << "Language Mode: ";
-
         switch (lang)
         {
             case language::C:
-                std::cout << "C";
+                std::cout << "Language Mode: C\n";
                 break;
             case language::Cpp:
-                std::cout << "C++";
+                std::cout << "Language Mode: C++\n";
                 break;
         }
-
-        std::cout << "\n";
     }
 
-    for (const auto& inPath: files)
+    for (const auto& inPath: inFiles)
     {
-        std::string outPath {};
-        if (outDir.empty())
-            outPath = inPath + getFileEnding(lang);
-        else
-            outPath = outDir + "/" + getFilename(inPath) + getFileEnding(lang);
-
         std::ifstream inFile {inPath};
-        std::ofstream outFile {outPath};
 
         if (inFile.is_open())
         {
+            std::string outPath {};
+            if (outDir.empty())
+                outPath = inPath + getFileEnding(lang);
+            else
+                outPath = outDir + "/" + getFilename(inPath) + getFileEnding(lang);
+
+            std::ofstream outFile {outPath};
+
             if (outFile.is_open())
             {
                 outFile << getPrefix(inPath, lang);
@@ -295,13 +292,13 @@ int main(int argc, char **argv)
             }
             else
             {
-                std::cerr << "Error: Unable to open file " << outPath << "\n";
+                std::cerr << "Error: Unable to open/create file " << outPath << "\n";
                 exit(EX_IOERR);
             }
         }
         else
         {
-            std::cerr << "Error: Unable to open file " << inPath << "\n";
+            std::cerr << "Error: Unable to open input file " << inPath << "\n";
             exit(EX_IOERR);
         }
     }
