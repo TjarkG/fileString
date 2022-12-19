@@ -176,7 +176,7 @@ std::string transformCharC(char in)
 void printHelp()
 {
     //yes, this would be the exact use case of this program... chickens and eggs
-    std::cout << "How to use: filestring [Options] [Input Files]\n\n"
+    std::cout << "How to use: fileString [Options] [Input Files]\n\n"
                  "Options:\n"
                  "-h Show this help message\n"
                  "-v Verbose output, prints output paths\n"

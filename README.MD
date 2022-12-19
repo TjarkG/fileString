@@ -50,7 +50,7 @@ make:
         fileString example -o src
 
 ## Command Line Arguments
-How to use: `$ filestring [Options] [Input Files]`
+How to use: `$ fileString [Options] [Input Files]`
 
 Options:
 - -h Show help message

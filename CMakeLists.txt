@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.2)
 project(fileString)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -24,7 +24,3 @@ add_custom_target(C++_Test
 
         DEPENDS tests/test.txt tests/test.cpp
         )
-
-#without this, CLion thinks these files dont have a target
-add_executable(void1 tests/test.c tests/test.txt.h)
-add_executable(void2 tests/test.cpp tests/test.txt.hpp)
