@@ -88,7 +88,7 @@ std::string getPrefix(const std::string &filePath, enum language &lang)
                    "\n#ifndef " + getHeaderName(filePath) +
                    "\n#define " + getHeaderName(filePath) +
                    "\n\n#include <string>\n\n"
-                   "const std::string " + getCFileName(filePath) + " {\"";
+                   "inline const std::string " + getCFileName(filePath) + " {\"";
         default:
             return "\"";
     }
