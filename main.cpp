@@ -6,21 +6,21 @@
 #include <sysexits.h>
 #include <filesystem>
 
-enum class language
+enum class Language
 {C, Cpp};
 
 //convert String to lowercase
 std::string strToLower(std::string in)
 {
-    std::transform(in.begin(), in.end(), in.begin(),
-                   [](unsigned char c){ return std::tolower(c); });
+    std::ranges::transform(in.begin(), in.end(), in.begin(),
+                   [](const unsigned char c){ return std::tolower(c); });
     return in;
 }
 
-std::string getHeaderName(const std::string &filePath)
+std::string getHeaderName(const std::string_view &filePath)
 {
     //separate filename
-    auto begin {filePath.find_last_of("/\\") + 1};
+    const auto begin {filePath.find_last_of("/\\") + 1};
     std::string name {filePath.substr(begin)};
 
     for(char &c: name)
@@ -30,7 +30,7 @@ std::string getHeaderName(const std::string &filePath)
             c = '_';
         //make everything Uppercase
         else
-            c = (char) toupper(c);
+            c = static_cast<char>(std::toupper(c));
     }
 
     //add _H to the End
@@ -43,8 +43,8 @@ std::string getHeaderName(const std::string &filePath)
 std::string getCFileName(const std::string &filePath)
 {
     //separate filename
-    auto begin {filePath.find_last_of("/\\") + 1};
-    auto end {filePath.find_last_of('.')};
+    const auto begin {filePath.find_last_of("/\\") + 1};
+    const auto end {filePath.find_last_of('.')};
     std::string name {filePath.substr(begin, end-begin)};
 
     //add underscore if first char is a digit
@@ -62,18 +62,18 @@ std::string getCFileName(const std::string &filePath)
 }
 
 //get filename with extension
-std::string getFilename(const std::string &filePath)
+std::string getFilename(const std::string& filePath)
 {
     //separate filename
-    auto begin {filePath.find_last_of("/\\") + 1};
+    const auto begin {filePath.find_last_of("/\\") + 1};
     return filePath.substr(begin);
 }
 
-std::string getPrefix(const std::string &filePath, enum language &lang)
+std::string getPrefix(const std::string &filePath, const enum Language lang)
 {
     switch (lang)
     {
-        case language::C:
+        case Language::C:
             return "//\n"
                    "// Created by fileString: https://github.com/TjarkG/fileString\n"
                    "//\n"
@@ -81,7 +81,7 @@ std::string getPrefix(const std::string &filePath, enum language &lang)
                    "\n#define " + getHeaderName(filePath) +
                    "\n\n"
                    "const char " + getCFileName(filePath) + "[] = \"";
-        case language::Cpp:
+        case Language::Cpp:
             return "//\n"
                    "// Created by fileString: https://github.com/TjarkG/fileString\n"
                    "//\n"
@@ -94,33 +94,33 @@ std::string getPrefix(const std::string &filePath, enum language &lang)
     }
 }
 
-std::string getSuffix(const std::string &filePath, enum language &lang)
+std::string getSuffix(const std::string &filePath, const enum Language lang)
 {
     switch (lang)
     {
-        case language::C:
+        case Language::C:
             return "\";\n\n#endif //" + getHeaderName(filePath) + "\n";
-        case language::Cpp:
+        case Language::Cpp:
             return "\"};\n\n#endif //" + getHeaderName(filePath) + "\n";
         default:
             return "\"";
     }
 }
 
-std::string getFileEnding(enum language &lang)
+std::string getFileEnding(const enum Language lang)
 {
     switch (lang)
     {
-        case language::C:
+        case Language::C:
             return ".h";
-        case language::Cpp:
+        case Language::Cpp:
             return ".hpp";
         default:
             return "";
     }
 }
 
-std::string transformCharC(char in)
+std::string transformCharC(const char in)
 {
     std::string out {};
     switch (in)
@@ -147,7 +147,7 @@ std::string transformCharC(char in)
             out.append("\\a");
             break;
         case '\\':
-            out.append("\\\\");
+            out.append(R"(\\)");
             break;
         case '?':
             out.append("\\?");
@@ -156,7 +156,7 @@ std::string transformCharC(char in)
             out.append("\\'");
             break;
         case '\"':
-            out.append("\\\"");
+            out.append(R"(\")");
             break;
         default:
             if(std::isprint(in))
@@ -164,7 +164,7 @@ std::string transformCharC(char in)
             else
             {
                 std::stringstream tmp;
-                tmp << "\\x" << std::hex << (int) ((uint8_t) in) << "\"\"";
+                tmp << "\\x" << std::hex << static_cast<const int>(in) << "\"\"";
                 out.append(tmp.str());
             }
             break;
@@ -175,7 +175,7 @@ std::string transformCharC(char in)
 
 void printHelp()
 {
-    //yes, this would be the exact use case of this program... chickens and eggs
+    //Yes, this would be the exact use case of this program... chickens and eggs
     std::cout << "How to use: fileString [Options] [Input Files]\n\n"
                  "Options:\n"
                  "-h Show this help message\n"
@@ -188,7 +188,7 @@ int main(int argc, char **argv)
 {
     bool verbose {false};
     bool help {argc == 1};  //show help if no arguments are supplied
-    enum language lang {language::C};
+    enum Language lang {Language::C};
     std::string outDir {};
 
     std::vector<std::string> inFiles {};
@@ -213,9 +213,9 @@ int main(int argc, char **argv)
 
             const auto next {strToLower(argv[i])};
             if(next == "cpp" || next == "c++")
-                lang = language::Cpp;
+                lang = Language::Cpp;
             else if (next == "c")
-                lang = language::C;
+                lang = Language::C;
             else
             {
                 std::cerr << "Error: " << argv[i] << " is not a valid language specifier\n";
@@ -251,10 +251,10 @@ int main(int argc, char **argv)
     {
         switch (lang)
         {
-            case language::C:
+            case Language::C:
                 std::cout << "Language Mode: C\n";
                 break;
-            case language::Cpp:
+            case Language::Cpp:
                 std::cout << "Language Mode: C++\n";
                 break;
         }
@@ -279,8 +279,9 @@ int main(int argc, char **argv)
                 outFile << getPrefix(inPath, lang);
 
                 char c{};
-                while (!(inFile.get(c), inFile.eof()))
+                while (!inFile.eof())
                 {
+	                inFile.get(c);
                     outFile << transformCharC(c);
                 }
                 inFile.close();
